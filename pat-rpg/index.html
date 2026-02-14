@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pat RPG Ultimate v3б</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<!-- ОБЛАСТЬ УВЕДОМЛЕНИЙ -->
+<div id="notification-area" class="notification-area"></div>
+
+<div id="game-container">
+    <!-- ЭКРАН СОЗДАНИЯ -->
+    <div id="setup-screen">
+        <h2>Создай Героя</h2>
+        <input type="text" id="name-input" placeholder="Имя питомца..." maxlength="12">
+        <div class="pet-selection">
+            <button onclick="selectPet('🐱', this)">🐱<br><small>Ловкий</small></button>
+            <button onclick="selectPet('🐶', this)">🐶<br><small>Выносливый</small></button>
+            <button onclick="selectPet('🐦', this)">🐦<br><small>Быстрый</small></button>
+            <button onclick="selectPet('🦎', this)">🦎<br><small>Сильный</small></button>
+            <button onclick="selectPet('🐲', this)">🐲<br><small>Магический</small></button>
+            <button onclick="selectPet('🐍', this)">🐍<br><small>Ядовитый</small></button>
+        </div>
+        
+        <!-- Добавим выбор сложности -->
+        <div style="margin: 15px 0;">
+            <label style="font-size: 14px; display: block; margin-bottom: 5px;">Сложность:</label>
+            <select id="difficulty-select" class="difficulty-select">
+                <option value="easy">Легкая (Для новичков)</option>
+                <option value="normal" selected>Нормальная (Стандартная)</option>
+                <option value="hard">Сложная (Для экспертов)</option>
+            </select>
+        </div>
+        
+        <button onclick="initGame()" class="btn-green">НАЧАТЬ ПРИКЛЮЧЕНИЕ ✨</button>
+    </div>
+
+    <!-- ИГРОВОЙ ЭКРАН -->
+    <div id="game-screen" class="hidden">
+        <!-- ШАПКА -->
+        <div class="header">
+            <div class="header-left">
+                <span class="level-badge">LVL <span id="ui-lvl">1</span></span>
+                <b id="ui-name">Герой</b>
+                <span id="evolution-indicator" style="font-size: 12px;"></span>
+            </div>
+            <div class="header-controls">
+                <button onclick="showInventory()" class="btn-icon" title="Инвентарь">🎒</button>
+                <button onclick="showSkills()" class="btn-icon" title="Навыки">⚡</button>
+                <button onclick="toggleSleep()" id="sleep-btn" class="btn-icon" title="Спать">💤</button>
+                <span class="coins-display">💰<span id="ui-coins">100</span></span>
+            </div>
+        </div>
+
+        <!-- ИГРОВАЯ СЦЕНА -->
+        <div class="stage">
+            <div id="thought-bubble">😊</div>
+            <div id="pet-sprite" class="pet" onclick="animatePet()">🐱</div>
+            <div id="enemy-sprite" class="enemy hidden">👾</div>
+        </div>
+
+        <!-- ЛОГ БОЯ -->
+        <div id="battle-log">Питомец готов к игре!</div>
+
+        <!-- СТАТИСТИКА -->
+        <div class="stats-grid">
+            <div class="stat-item">
+                ❤️ HP: <span id="txt-hp">100</span>/<span id="txt-max-hp">100</span>
+                <div class="bar-bg"><div id="bar-hp" class="bar-fill hp-bar"></div></div>
+            </div>
+            <div class="stat-item">
+                🔮 MP: <span id="txt-mp">50</span>/<span id="txt-max-mp">50</span>
+                <div class="bar-bg"><div id="bar-mp" class="bar-fill mp-bar"></div></div>
+            </div>
+            <div class="stat-item">
+                🍖 Сытость: <span id="txt-hg">100</span>%
+                <div class="bar-bg"><div id="bar-hg" class="bar-fill hunger-bar"></div></div>
+            </div>
+            <div class="stat-item">
+                💤 Сон: <span id="txt-sl">100</span>%
+                <div class="bar-bg"><div id="bar-sl" class="bar-fill sleep-bar"></div></div>
+            </div>
+            <div class="stat-item">
+                ✨ Опыт: <span id="txt-xp">0</span>%
+                <div class="bar-bg xp-bar"><div id="bar-xp" class="bar-fill xp-fill"></div></div>
+            </div>
+            <div class="stat-item">
+                🔥 ATK: <span id="txt-atk">10</span> | 🛡️ DEF: <span id="txt-def">5</span>
+            </div>
+        </div>
+
+        <!-- ОСНОВНЫЕ ДЕЙСТВИЯ -->
+        <div id="controls-main" class="grid-btns">
+            <button class="btn-blue" onclick="playAction('feed')">🍖 Кормить (15💰)</button>
+            <button class="btn-gold" onclick="playAction('play')">⚽ Играть (+10💰)</button>
+            <button class="btn-sleep" onclick="toggleSleep()">💤 Спать</button>
+            <button class="btn-red" onclick="enterDungeon()">⚔️ В БОЙ!</button>
+        </div>
+
+        <!-- БОЕВЫЕ ДЕЙСТВИЯ -->
+        <div id="controls-battle" class="grid-btns hidden">
+            <div class="battle-info">
+                <div>Враг: <span id="enemy-name">-</span></div>
+                <div>❤️ <span id="enemy-hp">-</span>/<span id="enemy-max-hp">-</span></div>
+            </div>
+            <button class="btn-attack" onclick="useSkill('basic')">👊 Базовая атака</button>
+            <button class="btn-skill btn-skill-fire" onclick="useSkill('fireball')" id="skill-fireball" disabled>🔥 Огненный шар (15 MP)</button>
+            <button class="btn-skill btn-skill-ice" onclick="useSkill('ice')" id="skill-ice" disabled>❄️ Ледяная стрела (10 MP)</button>
+            <button class="btn-skill btn-skill-heal" onclick="useSkill('heal')" id="skill-heal" disabled>💚 Лечение (20 MP)</button>
+            <button class="btn-red" onclick="escapeBattle()">🏃 Бежать (30%)</button>
+        </div>
+        
+        <button onclick="resetGame()" class="btn-reset">🔄 сбросить прогресс</button>
+    </div>
+</div>
+
+<!-- МОДАЛЬНЫЕ ОКНА -->
+<div id="inventory-modal" class="modal hidden">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>🎒 Инвентарь</h3>
+            <button onclick="closeModal('inventory-modal')" class="btn-close">×</button>
+        </div>
+        <div class="modal-body">
+            <div id="inventory-grid" class="inventory-grid"></div>
+            <div class="inventory-buttons">
+                <button onclick="showShop()" class="btn-blue">🏪 Магазин</button>
+                <button onclick="showQuests()" class="btn-gold">📜 Квесты</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="shop-modal" class="modal hidden">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>🏪 Магазин</h3>
+            <button onclick="closeModal('shop-modal')" class="btn-close">×</button>
+        </div>
+        <div class="modal-body">
+            <div id="shop-items" class="shop-grid"></div>
+            <div style="text-align: center; margin-top: 15px; font-weight: bold;">
+                Баланс: <span id="shop-coins">100</span>💰
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="skills-modal" class="modal hidden">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>⚡ Навыки</h3>
+            <button onclick="closeModal('skills-modal')" class="btn-close">×</button>
+        </div>
+        <div class="modal-body">
+            <div id="skills-list"></div>
+            <div style="margin-top: 15px; padding: 10px; background: #f1f5f9; border-radius: 10px;">
+                <div style="font-weight: bold; margin-bottom: 5px;">Текущие навыки:</div>
+                <div id="current-skills"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="quests-modal" class="modal hidden">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>📜 Квесты</h3>
+            <button onclick="closeModal('quests-modal')" class="btn-close">×</button>
+        </div>
+        <div class="modal-body">
+            <div id="active-quests"></div>
+            <div id="completed-quests" style="margin-top: 15px;"></div>
+        </div>
+    </div>
+</div>
+
+<script src="data.js"></script>
+<script src="game.js"></script>
+<script src="modules/ui.js"></script>
+<script src="modules/battle.js"></script>
+<script src="modules/inventory.js"></script>
+<script src="modules/evolution.js"></script>
+<script src="modules/quests.js"></script>
+<script src="modules/save.js"></script>
+</body>
+</html>
